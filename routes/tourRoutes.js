@@ -1,15 +1,21 @@
 const express = require("express");
-const fs = require("fs");
-const tourController = require("./../controllers/tourControllers");
+const tourController = require("../controllers/tourControllers");
 
+// eslint-disable-next-line new-cap
 const router = express.Router();
-
-router.param("id", tourController.checkId);
 
 router
     .route("/")
     .get(tourController.getAllTours)
-    .post(tourController.checkBody, tourController.createNewTours);
+    .post(tourController.createNewTours);
+
+router.route("/get-tour-stats").get(tourController.getTourStats);
+
+router.route("/get-monthly-plan/:year").get(tourController.getMonthlyPlan);
+
+router
+    .route("/top-5-cheap")
+    .get(tourController.aliasTopTours, tourController.getAllTours);
 
 router
     .route("/:id")
