@@ -1,0 +1,63 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "NATours API",
+        "version": "1.0.0"
+    },
+    "servers": {
+        "url": "localhost:3000/api/v1",
+        "description": "development"
+    },
+    "paths": {
+        "/tours": {
+            "get": {
+                "operationId": "getAllTours",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "name",
+                        "required": false
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Tour"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {}
+        }
+    },
+    "components": {
+        "schemas": {
+            "Tour": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "price": {
+                        "type": "number"
+                    }
+                }
+            }
+        }
+    }
+}
