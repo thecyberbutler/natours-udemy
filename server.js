@@ -1,5 +1,12 @@
+/* eslint-disable no-console */
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+
+process.on("uncaughtException", (err) => {
+    console.log("Uncaught Exception... Shutting down");
+    console.error(err.name, err.message);
+    process.exit(1);
+});
 
 dotenv.config({ path: "./.env" });
 
@@ -12,12 +19,18 @@ mongoose
         useNewUrlParser: true,
     })
     .then(() => {
-        // eslint-disable-next-line no-console
         console.log("DB Connected...");
     });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    // eslint-disable-next-line no-console
+const server = app.listen(port, () => {
     console.log(`Server listening on port ${port}...`);
+});
+
+process.on("unhandledRejection", (err) => {
+    console.error(err.name, err.message);
+    console.log("Unhandled Rejection... Shutting down");
+    server.close(() => {
+        process.exit(1);
+    });
 });
