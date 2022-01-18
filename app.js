@@ -15,7 +15,6 @@ const globalError = require("./controllers/errorControllers");
 
 const tourRouter = require("./routes/tourRoutes");
 const userRouter = require("./routes/userRoutes");
-const SMTPPool = require("nodemailer/lib/smtp-pool");
 
 const app = express();
 
