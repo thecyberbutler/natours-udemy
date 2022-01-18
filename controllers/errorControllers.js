@@ -22,6 +22,10 @@ const handleValidationError = (err) => {
     return new AppError(message, 400);
 };
 
+const handleJsonWebTokenError = () => new AppError("Invalid token", 401);
+
+const handleExpiredWebTokenError = () => new AppError("Token Expired", 401);
+
 const sendErrorDev = (err, res) => {
     res.status(err.statusCode).json({
         status: err.status,
@@ -35,7 +39,7 @@ const sendErrorProd = (err, res) => {
     if (err.isOperational) {
         res.status(err.statusCode).json({
             status: err.status,
-            message: err.message,
+            message: err.message || err._message,
         });
     } else {
         // eslint-disable-next-line no-console
@@ -62,6 +66,10 @@ module.exports = (err, req, res, next) => {
             error = handleDuplicateFieldError(error);
         } else if (error.name === "ValidationError") {
             error = handleValidationError(error);
+        } else if (error.name === "JsonWebTokenError") {
+            error = handleJsonWebTokenError();
+        } else if (error.name === "TokenExpiredError") {
+            error = handleExpiredWebTokenError();
         }
         sendErrorProd(error, res);
     }

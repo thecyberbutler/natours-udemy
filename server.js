@@ -17,6 +17,7 @@ const DB = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD
 mongoose
     .connect(DB, {
         useNewUrlParser: true,
+        autoIndex: true,
     })
     .then(() => {
         console.log("DB Connected...");

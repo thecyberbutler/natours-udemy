@@ -119,14 +119,14 @@ tourSchema.pre("findOneAndUpdate", function (next) {
 });
 
 //Query Middleware
-tourSchema.pre("/^find/", function (next) {
+tourSchema.pre(/^find/, function (next) {
     this.find({ secretTour: { $ne: true } });
 
     this.start = Date.now();
     next();
 });
 
-tourSchema.post("/^find/", function (docs, next) {
+tourSchema.post(/^find/, function (docs, next) {
     // eslint-disable-next-line no-console
     console.log(`Query took ${Date.now() - this.start} ms`);
     next();

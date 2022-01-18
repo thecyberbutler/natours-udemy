@@ -1,12 +1,13 @@
 const express = require("express");
 const tourController = require("../controllers/tourControllers");
+const authController = require("../controllers/authControllers");
 
 // eslint-disable-next-line new-cap
 const router = express.Router();
 
 router
     .route("/")
-    .get(tourController.getAllTours)
+    .get(authController.protect, tourController.getAllTours)
     .post(tourController.createNewTours);
 
 router.route("/get-tour-stats").get(tourController.getTourStats);
@@ -21,6 +22,10 @@ router
     .route("/:id")
     .get(tourController.getTour)
     .patch(tourController.patchTour)
-    .delete(tourController.deleteTour);
+    .delete(
+        authController.protect,
+        authController.restrictTo("admin"),
+        tourController.deleteTour
+    );
 
 module.exports = router;
