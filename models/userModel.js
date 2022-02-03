@@ -44,14 +44,6 @@ const userSchema = new mongoose.Schema(
                 message: "Passwords do not match",
             },
         },
-        createdDate: {
-            type: Date,
-            default: Date.now(),
-        },
-        modifiedAt: {
-            type: Date,
-            default: Date.now(),
-        },
         passwordChangedAt: {
             type: Date,
             default: Date.now(),
@@ -72,10 +64,14 @@ const userSchema = new mongoose.Schema(
             transform: function (doc, ret) {
                 delete ret.password;
                 delete ret.passwordConfirm;
+                delete ret.passwordChangedAt;
                 delete ret.active;
                 delete ret.__v;
+                return ret;
             },
         },
+        timestamps: true,
+        validateBeforeSave: false,
     }
 );
 
@@ -90,21 +86,13 @@ userSchema.pre("save", async function (next) {
     return next();
 });
 
-userSchema.pre("findOneAndUpdate", function (next) {
-    this.set({ modifiedAt: new Date() });
-    next();
-});
-
 userSchema.pre(/^find/, function (next) {
     this.find({ active: true });
     next();
 });
 
-userSchema.methods.checkPassword = async function (
-    candidatePassword,
-    userPassword
-) {
-    return await bcrypt.compare(candidatePassword, userPassword);
+userSchema.methods.checkPassword = async function (candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
 };
 
 userSchema.methods.checkPasswordChange = function (issuedAt) {

@@ -45,15 +45,13 @@ exports.login = catchAsync(async (req, res, next) => {
     if (!email || !password) {
         return next(new AppError("Please provide email and password", 400));
     }
-    const user = await User.findOne({ email, active: true }).select(
-        "+password"
-    );
+    const user = await User.findOne({ email, active: true });
     if (!user) {
         return next(new AppError("Authentication failed", 401));
     }
-    const result = await user.checkPassword(password, user.password);
+    const result = await user.checkPassword(password);
     if (result) {
-        createSendToken(user, 200, res);
+        return createSendToken(user, 200, res);
     }
     return next(new AppError("Authentication failed", 401));
 });
@@ -63,7 +61,7 @@ exports.protect = catchAsync(async (req, res, next) => {
     let token;
     if (
         req.headers.authorization &&
-        req.headers.authorization.startsWith("Bearer")
+        req.headers.authorization.startsWith("Bearer ")
     ) {
         token = req.headers.authorization.split(" ")[1];
     }
@@ -97,26 +95,29 @@ exports.restrictTo =
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
     const user = await User.findOne({ email: req.body.email });
-    if (!user) {
-        return next(new AppError("No user with that email", 404));
+    if (user) {
+        const token = user.createPasswordToken();
+        await user.save({ validateBeforeSave: false });
+
+        // Send Email
+        // Generate URL
+        const resetURL = `${req.protocol}://${req.get(
+            "host"
+        )}/api/v1/users/resetPassword/${token}`;
+
+        const message = `Submit patch request with new password and passwordConfirm to: ${resetURL}\n\nIf you didnt forget your password, please ignore this email.`;
+
+        await sendEmail({
+            email: user.email,
+            subject: "Your password reset token",
+            message,
+        });
     }
-    const token = user.createPasswordToken();
-    await user.save({ validateBeforeSave: false });
 
-    // Send Email
-    // Generate URL
-    const resetURL = `${req.protocol}://${req.get(
-        "host"
-    )}/api/v1/users/resetPassword/${token}`;
-
-    const message = `Submit patch request with new password and passwordConfirm to: ${resetURL}\n\nIf you didnt forget your password, please ignore this email.`;
-
-    await sendEmail({
-        email: user.email,
-        subject: "Your password reset token",
-        message,
+    res.json({
+        status: "success",
+        message: "If email exists, password reset was sent.",
     });
-    res.json({ status: "success", message: "Token sent to email" });
 });
 
 exports.resetPassword = catchAsync(async (req, res, next) => {

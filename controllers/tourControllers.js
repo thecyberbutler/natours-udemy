@@ -1,7 +1,7 @@
 const Tour = require("../models/tourModel");
-const APIFeatures = require("../utils/apiFeatures");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const factory = require("./handlerFactory");
 
 exports.aliasTopTours = (req, res, next) => {
     req.query.limit = 5;
@@ -9,62 +9,6 @@ exports.aliasTopTours = (req, res, next) => {
     req.query.fields = "name,price,ratingsAverage,summary,difficulty";
     next();
 };
-
-exports.getAllTours = catchAsync(async (req, res, next) => {
-    //Execute Query
-    const features = new APIFeatures(Tour.find(), req.query)
-        .filter()
-        .sort()
-        .limitFields()
-        .paginate();
-    const tours = await features.query;
-    res.json({
-        status: "success",
-        count: tours.length,
-        data: tours,
-    });
-});
-
-exports.createNewTours = catchAsync(async (req, res, next) => {
-    const newTour = await Tour.create(req.body);
-    res.status(201).json({ status: "success", data: newTour });
-});
-
-exports.getTour = catchAsync(async (req, res, next) => {
-    const tour = await Tour.findById(req.params.id);
-
-    if (!tour) {
-        return next(
-            new AppError(`No tour found with id ${req.params.id}`, 404)
-        );
-    }
-    res.json({ status: "success", data: tour });
-});
-
-exports.patchTour = catchAsync(async (req, res, next) => {
-    const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
-        new: true,
-        runValidators: true,
-    });
-
-    if (!tour) {
-        return next(
-            new AppError(`No tour found with id ${req.params.id}`, 404)
-        );
-    }
-    res.status(202).json({ status: "success", data: tour });
-});
-
-exports.deleteTour = catchAsync(async (req, res, next) => {
-    const tour = await Tour.findByIdAndDelete(req.params.id);
-
-    if (!tour) {
-        return next(
-            new AppError(`No tour found with id ${req.params.id}`, 404)
-        );
-    }
-    res.status(204).send();
-});
 
 exports.getTourStats = catchAsync(async (req, res, next) => {
     const stats = await Tour.aggregate([
@@ -135,3 +79,73 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
         data: plan,
     });
 });
+
+exports.toursWithin = catchAsync(async (req, res, next) => {
+    const { distance, latlng, unit } = req.params;
+    const [lat, long] = latlng.split(",");
+
+    const radius = unit === "miles" ? distance / 3963.2 : distance / 6378.1;
+
+    if (!lat || !long) {
+        return new AppError(
+            "Must define latitude and longitude in format lat,long.",
+            400
+        );
+    }
+
+    const tours = await Tour.find({
+        startLocation: {
+            $geoWithin: { $centerSphere: [[long, lat], radius] },
+        },
+    });
+
+    res.json({
+        status: "success",
+        count: tours.length,
+        data: tours,
+    });
+});
+
+exports.getDistances = catchAsync(async (req, res, next) => {
+    const { latlng, unit } = req.params;
+    const [lat, long] = latlng.split(",");
+
+    if (!lat || !long) {
+        return new AppError(
+            "Must define latitude and longitude in format lat,long.",
+            400
+        );
+    }
+
+    const multiplier = unit === "miles" ? 0.00062 : 0.001;
+
+    const distances = await Tour.aggregate([
+        {
+            $geoNear: {
+                near: {
+                    type: "point",
+                    coordinates: [long * 1, lat * 1],
+                },
+                distanceField: "distance",
+                distanceMultiplier: multiplier,
+            },
+        },
+        {
+            $project: {
+                name: 1,
+                distance: 1,
+            },
+        },
+    ]);
+
+    res.json({
+        status: "success",
+        data: distances,
+    });
+});
+
+exports.getAllTours = factory.getAll(Tour);
+exports.createNewTours = factory.createOne(Tour);
+exports.getTour = factory.getOne(Tour, { path: "reviews" });
+exports.patchTour = factory.updateOne(Tour);
+exports.deleteTour = factory.deleteOne(Tour);

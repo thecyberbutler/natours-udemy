@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 
 process.on("uncaughtException", (err) => {
     console.log("Uncaught Exception... Shutting down");
-    console.error(err.name, err.message);
+    console.error(err.name, err.message, err.stack);
     process.exit(1);
 });
 
@@ -35,3 +35,5 @@ process.on("unhandledRejection", (err) => {
         process.exit(1);
     });
 });
+
+module.exports = server;

@@ -6,15 +6,15 @@ const helmet = require("helmet");
 const mongoSanitize = require("express-mongo-sanitize");
 const xss = require("xss-clean");
 const hpp = require("hpp");
+const swaggerUi = require("swagger-ui-express");
+const swaggerDocument = require("./docs/swagger");
 
 const AppError = require("./utils/appError");
 const globalError = require("./controllers/errorControllers");
 
-// const swaggerUi = require("swagger-ui-express");
-// const swaggerDocument = require("./swagger.json");
-
 const tourRouter = require("./routes/tourRoutes");
 const userRouter = require("./routes/userRoutes");
+const reviewRouter = require("./routes/reviewRoutes");
 
 const app = express();
 
@@ -60,8 +60,9 @@ app.use("/api/v1", apiV1);
 apiV1.use(limiter);
 apiV1.use("/tours", tourRouter);
 apiV1.use("/users", userRouter);
+apiV1.use("/reviews", reviewRouter);
 
-// app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.all("*", (req, res, next) => {
     next(new AppError(`Can't find ${req.originalUrl}`, 404));
